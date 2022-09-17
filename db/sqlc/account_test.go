@@ -4,15 +4,18 @@ import (
 	"context"
 	"database/sql"
 	"testing"
+	"time"
 
 	"github.com/khorsl/simple_bank/db/util"
 
 	"github.com/stretchr/testify/require"
 )
 
-func createRandomAccount() (Account, CreateAccountParams, error) {
+func createRandomAccount(t *testing.T) (Account, CreateAccountParams, error) {
+	user := createRandomUser(t)
+
 	arg := CreateAccountParams{
-		Owner:    util.RandomOwner(),
+		Owner:    user.ID,
 		Balance:  util.RandomMoney(),
 		Currency: util.RandomCurrency(),
 	}
@@ -23,7 +26,7 @@ func createRandomAccount() (Account, CreateAccountParams, error) {
 }
 
 func TestCreateAccount(t *testing.T) {
-	account, expected, err := createRandomAccount()
+	account, expected, err := createRandomAccount(t)
 
 	require.NoError(t, err)
 	require.NotEmpty(t, account)
@@ -37,7 +40,7 @@ func TestCreateAccount(t *testing.T) {
 }
 
 func TestGetAccount(t *testing.T) {
-	account1, _, _ := createRandomAccount()
+	account1, _, _ := createRandomAccount(t)
 	account2, err := testQueries.GetAccount(context.Background(), account1.ID)
 
 	require.NoError(t, err)
@@ -47,11 +50,11 @@ func TestGetAccount(t *testing.T) {
 	require.Equal(t, account1.Owner, account2.Owner)
 	require.Equal(t, account1.Balance, account2.Balance)
 	require.Equal(t, account1.Currency, account2.Currency)
-	require.Equal(t, account1.CreatedAt, account2.CreatedAt)
+	require.WithinDuration(t, account1.CreatedAt, account2.CreatedAt, time.Second)
 }
 
 func TestUpdateAccount(t *testing.T) {
-	account1, _, _ := createRandomAccount()
+	account1, _, _ := createRandomAccount(t)
 
 	arg := UpdateAccountParams{
 		ID:      account1.ID,
@@ -71,7 +74,7 @@ func TestUpdateAccount(t *testing.T) {
 }
 
 func TestDeleteAccount(t *testing.T) {
-	account1, _, _ := createRandomAccount()
+	account1, _, _ := createRandomAccount(t)
 
 	err := testQueries.DeleteAccount(context.Background(), account1.ID)
 	require.NoError(t, err)
@@ -84,7 +87,7 @@ func TestDeleteAccount(t *testing.T) {
 
 func TestListAccounts(t *testing.T) {
 	for i := 0; i < 10; i++ {
-		createRandomAccount()
+		createRandomAccount(t)
 	}
 
 	arg := ListAccountsParams{

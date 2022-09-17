@@ -20,7 +20,7 @@ func createRandomEntry(account Account) (Entry, CreateEntryParams, error) {
 }
 
 func TestCreateEntry(t *testing.T) {
-	account, _, _ := createRandomAccount()
+	account, _, _ := createRandomAccount(t)
 	entry, expected, err := createRandomEntry(account)
 
 	require.NoError(t, err)
@@ -34,7 +34,7 @@ func TestCreateEntry(t *testing.T) {
 }
 
 func TestGetEntry(t *testing.T) {
-	account, _, _ := createRandomAccount()
+	account, _, _ := createRandomAccount(t)
 	entry1, _, _ := createRandomEntry(account)
 	entry2, err := testQueries.GetEntry(context.Background(), entry1.ID)
 
@@ -47,7 +47,7 @@ func TestGetEntry(t *testing.T) {
 }
 
 func TestListEntries(t *testing.T) {
-	account, _, _ := createRandomAccount()
+	account, _, _ := createRandomAccount(t)
 
 	for i := 0; i < 10; i++ {
 		createRandomEntry(account)
