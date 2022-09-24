@@ -16,7 +16,7 @@ import (
 
 // Owner field is being retained for future if there are admin accounts that could perform all actions
 type createAccountRequest struct {
-	Owner    int64  `json:"owner" binding:"required"`
+	Owner    int64  `json:"owner"`
 	Currency string `json:"currency" binding:"required,currency"`
 }
 
