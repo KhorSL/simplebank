@@ -2,9 +2,11 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 
 	db "github.com/khorsl/simple_bank/db/sqlc"
+	"github.com/khorsl/simple_bank/token"
 	"github.com/lib/pq"
 
 	"github.com/gin-gonic/gin"
@@ -12,6 +14,7 @@ import (
 
 // Create Account
 
+// Owner field is being retained for future if there are admin accounts that could perform all actions
 type createAccountRequest struct {
 	Owner    int64  `json:"owner" binding:"required"`
 	Currency string `json:"currency" binding:"required,currency"`
@@ -24,8 +27,16 @@ func (server *Server) createAccount(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+
+	user, err := server.store.GetUserByUsername(ctx, authPayload.Username)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
 	arg := db.CreateAccountParams{
-		Owner:    req.Owner,
+		Owner:    user.ID,
 		Currency: req.Currency,
 		Balance:  0,
 	}
@@ -71,6 +82,20 @@ func (server *Server) getAccount(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+
+	user, err := server.store.GetUserByUsername(ctx, authPayload.Username)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	if account.Owner != user.ID {
+		err = errors.New("account does not belong to authenticated users")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
 	ctx.JSON(http.StatusOK, account)
 }
 
@@ -88,7 +113,16 @@ func (server *Server) listAccount(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+
+	user, err := server.store.GetUserByUsername(ctx, authPayload.Username)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
 	arg := db.ListAccountsParams{
+		Owner:  user.ID,
 		Limit:  req.PageSize,
 		Offset: (req.PageID - 1) * req.PageSize,
 	}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	db "github.com/khorsl/simple_bank/db/sqlc"
+	"github.com/khorsl/simple_bank/token"
 )
 
 type transferRequest struct {
@@ -20,6 +21,18 @@ func (server *Server) createTransfer(ctx *gin.Context) {
 	var req transferRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+
+	user, err := server.store.GetUserByUsername(ctx, authPayload.Username)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	if !server.isUserAuthorizedToTransfer(ctx, req.FromAccountID, user.ID) {
 		return
 	}
 
@@ -82,4 +95,20 @@ func (server *Server) isValidTransfer(ctx *gin.Context, req transferRequest) boo
 	return server.isValidAccountCurrency(ctx, req.FromAccountID, req.Currency) &&
 		server.isValidAccountCurrency(ctx, req.ToAccountID, req.Currency) &&
 		server.isSufficientBalance(ctx, req.FromAccountID, req.Amount)
+}
+
+func (server *Server) isUserAuthorizedToTransfer(ctx *gin.Context, accountID int64, userId int64) bool {
+	account, err := server.store.GetAccount(ctx, accountID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return false
+	}
+
+	if userId != account.Owner {
+		err := fmt.Errorf("user is unauthorized to transfer money from the account")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return false
+	}
+
+	return true
 }
