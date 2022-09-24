@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/aead/chacha20poly1305"
-	"github.com/khorsl/simple_bank/db/util"
+	"github.com/khorsl/simple_bank/util"
 	"github.com/o1egl/paseto"
 	"github.com/stretchr/testify/require"
 )

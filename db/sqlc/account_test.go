@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/khorsl/simple_bank/db/util"
+	"github.com/khorsl/simple_bank/util"
 
 	"github.com/stretchr/testify/require"
 )

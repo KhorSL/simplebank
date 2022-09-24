@@ -1,6 +1,11 @@
 package api
 
 import (
+	"fmt"
+
+	"github.com/khorsl/simple_bank/token"
+	"github.com/khorsl/simple_bank/util"
+
 	db "github.com/khorsl/simple_bank/db/sqlc"
 
 	"github.com/gin-gonic/gin"
@@ -9,28 +14,30 @@ import (
 )
 
 type Server struct {
-	store  db.Store
-	router *gin.Engine
+	store      db.Store
+	tokenMaker token.Maker
+	config     util.Config
+	router     *gin.Engine
 }
 
-func NewServer(store db.Store) *Server {
-	server := &Server{store: store}
-	router := gin.Default()
+func NewServer(config util.Config, store db.Store) (*Server, error) {
+	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create token maker: %w", err)
+	}
+
+	server := &Server{
+		config:     config,
+		store:      store,
+		tokenMaker: tokenMaker,
+	}
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterValidation("currency", validCurrency)
 	}
 
-	router.POST("/users", server.createUser)
-
-	router.POST("/accounts", server.createAccount)
-	router.GET("/account/:id", server.getAccount)
-	router.GET("/accounts", server.listAccount)
-
-	router.POST("/transfers", server.createTransfer)
-
-	server.router = router
-	return server
+	server.setupRouter()
+	return server, nil
 }
 
 func (server *Server) Start(address string) error {
@@ -39,4 +46,19 @@ func (server *Server) Start(address string) error {
 
 func errorResponse(err error) gin.H {
 	return gin.H{"error": err.Error()}
+}
+
+func (server *Server) setupRouter() {
+	router := gin.Default()
+
+	router.POST("/users", server.createUser)
+	router.POST("/users/login", server.loginUser)
+
+	router.POST("/accounts", server.createAccount)
+	router.GET("/account/:id", server.getAccount)
+	router.GET("/accounts", server.listAccount)
+
+	router.POST("/transfers", server.createTransfer)
+
+	server.router = router
 }

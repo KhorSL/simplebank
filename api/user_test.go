@@ -15,7 +15,7 @@ import (
 	"github.com/golang/mock/gomock"
 	mockdb "github.com/khorsl/simple_bank/db/mock"
 	db "github.com/khorsl/simple_bank/db/sqlc"
-	"github.com/khorsl/simple_bank/db/util"
+	"github.com/khorsl/simple_bank/util"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 )
@@ -185,7 +185,7 @@ func TestCreateUserAPI(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server := NewServer(store)
+			server := newTestServer(t, store)
 			recorder := httptest.NewRecorder()
 
 			data, err := json.Marshal(tc.body)

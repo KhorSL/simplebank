@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/khorsl/simple_bank/db/util"
+	"github.com/khorsl/simple_bank/util"
 
 	_ "github.com/lib/pq"
 )

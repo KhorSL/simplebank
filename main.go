@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/khorsl/simple_bank/api"
-	"github.com/khorsl/simple_bank/db/util"
+	"github.com/khorsl/simple_bank/util"
 
 	db "github.com/khorsl/simple_bank/db/sqlc"
 
@@ -24,7 +24,10 @@ func main() {
 	}
 
 	store := db.NewStore(conn)
-	server := api.NewServer(store)
+	server, err := api.NewServer(config, store)
+	if err != nil {
+		log.Fatal("cannot create server:", err)
+	}
 
 	err = server.Start(config.ServerAddress)
 	if err != nil {
