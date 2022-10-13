@@ -100,6 +100,11 @@ func (server *Server) isValidTransfer(ctx *gin.Context, req transferRequest) boo
 func (server *Server) isUserAuthorizedToTransfer(ctx *gin.Context, accountID int64, userId int64) bool {
 	account, err := server.store.GetAccount(ctx, accountID)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return false
+		}
+
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return false
 	}
